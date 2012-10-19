@@ -1,0 +1,19 @@
+<package>
+  <description brief="slynen_tools">
+
+     slynen_tools
+
+  </description>
+  <author>slynen</author>
+  <license>BSD</license>
+  <review status="unreviewed" notes=""/>
+  <url>http://ros.org/wiki/slynen_tools</url>
+ <depend package="roscpp"/>
+ <depend package="visualization_msgs"/>
+  <export>
+      <cpp cflags="-I${prefix}/include" lflags=" -L${prefix}/lib -lgraphvis"/>
+  </export>
+
+</package>
+
+
