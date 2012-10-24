@@ -12,19 +12,18 @@
 #include <slynen_tools/lifo_nonlocking.h>
 #include <iostream>
 
-template<typename, size_t>
+template<typename>
 class concurrent_heap;
 
-template<typename, size_t>
+template<typename>
 class concurrent_queue;
 
-template<class container_T, size_t NMAXELEM>
+template<class container_T>
 class concurrent_base
 {
-	friend class concurrent_heap<container_T, NMAXELEM>;
-	friend class concurrent_queue<container_T, NMAXELEM>;
+	friend class concurrent_heap<container_T>;
+	friend class concurrent_queue<container_T>;
 protected:
-	int waited;
 	container_T mqueue;
 	mutable boost::mutex mmutex;
 	boost::condition_variable mcond;
@@ -41,21 +40,16 @@ public:
 
 	__inline__ void push(value_type const& data)
 	{
+		bool const was_empty=mqueue.empty();
 		using namespace std;
-		size_t qsze = mqueue.size();
-		while(qsze > NMAXELEM)
-		{
-			cout<<endl<<endl;
-			cout<<"Queue is full: ... queue size "<<qsze<<" max: "<<NMAXELEM<<endl<<endl;;
+		{ //to unlock before notification
 			boost::mutex::scoped_lock lock(mmutex);
-			concurrent_base<container_T, NMAXELEM>::mcond.wait(lock);
-			cout<<"ok checking for queuesize"<<endl;
-			qsze = mqueue.size();
+			mqueue.push(data);
 		}
-		boost::mutex::scoped_lock lock(mmutex);
-		mqueue.push(data);
-		lock.unlock();
-		mcond.notify_one();
+		if(was_empty)
+        	{            
+			mcond.notify_one();
+		}
 	}
 	__inline__ bool empty() const
 	{
@@ -73,80 +67,80 @@ public:
 	}
 };
 
-template<class container_T, size_t NMAXELEM = 200000000U>
-class concurrent_heap:public concurrent_base<container_T, NMAXELEM>
+template<class container_T>
+class concurrent_heap:public concurrent_base<container_T>
 {
 public:
-	using concurrent_base<container_T, NMAXELEM>::size;
-	using concurrent_base<container_T, NMAXELEM>::push;
-	using concurrent_base<container_T, NMAXELEM>::empty;
+	using concurrent_base<container_T>::size;
+	using concurrent_base<container_T>::push;
+	using concurrent_base<container_T>::empty;
 
-	concurrent_heap(){concurrent_base<container_T, NMAXELEM>::waited=0;};
+	concurrent_heap(){};
 
 	virtual ~concurrent_heap(){};
-	virtual __inline__ typename concurrent_base<container_T, NMAXELEM>::value_type pop(void){
-		boost::mutex::scoped_lock lock(concurrent_base<container_T, NMAXELEM>::mmutex);
-		while(concurrent_base<container_T, NMAXELEM>::mqueue.empty())
+	virtual __inline__ typename concurrent_base<container_T>::value_type pop(void){
+		boost::mutex::scoped_lock lock(concurrent_base<container_T>::mmutex);
+		while(concurrent_base<container_T>::mqueue.empty())
 		{
-			concurrent_base<container_T, NMAXELEM>::mcond.wait(lock);
+			concurrent_base<container_T>::mcond.wait(lock);
 		}
-		typename container_T::value_type topval = concurrent_base<container_T, NMAXELEM>::mqueue.top();
-		concurrent_base<container_T, NMAXELEM>::mqueue.pop();
+		typename container_T::value_type topval = concurrent_base<container_T>::mqueue.top();
+		concurrent_base<container_T>::mqueue.pop();
 		return topval;
 	}
 	virtual __inline__ void clear(){
-		boost::mutex::scoped_lock lock(concurrent_base<container_T, NMAXELEM>::mmutex);
-		concurrent_base<container_T, NMAXELEM>::mqueue.clear();
+		boost::mutex::scoped_lock lock(concurrent_base<container_T>::mmutex);
+		concurrent_base<container_T>::mqueue.clear();
 	}
 };
 
-template<class container_T, size_t NMAXELEM = 200000000U>
-class concurrent_queue:public concurrent_base<container_T, NMAXELEM>
+template<class container_T>
+class concurrent_queue:public concurrent_base<container_T>
 {
 public:
-	using concurrent_base<container_T, NMAXELEM>::size;
-	using concurrent_base<container_T, NMAXELEM>::push;
-	using concurrent_base<container_T, NMAXELEM>::empty;
-	concurrent_queue(){concurrent_base<container_T, NMAXELEM>::waited=0;};
+	using concurrent_base<container_T>::size;
+	using concurrent_base<container_T>::push;
+	using concurrent_base<container_T>::empty;
+	concurrent_queue(){};
 	virtual ~concurrent_queue(){};
-	__inline__ typename concurrent_base<container_T, NMAXELEM>::value_type pop(void){
-		boost::mutex::scoped_lock lock(concurrent_base<container_T, NMAXELEM>::mmutex);
-		while(concurrent_base<container_T, NMAXELEM>::mqueue.empty())
+	__inline__ typename concurrent_base<container_T>::value_type pop(void){
+		boost::mutex::scoped_lock lock(concurrent_base<container_T>::mmutex);
+		while(concurrent_base<container_T>::mqueue.empty())
 		{
-			concurrent_base<container_T, NMAXELEM>::mcond.wait(lock);
+			concurrent_base<container_T>::mcond.wait(lock);
 		}
-		typename concurrent_base<container_T, NMAXELEM>::value_type topval = concurrent_base<container_T, NMAXELEM>::mqueue.front();
-		concurrent_base<container_T, NMAXELEM>::mqueue.pop();
+		typename concurrent_base<container_T>::value_type topval = concurrent_base<container_T>::mqueue.front();
+		concurrent_base<container_T>::mqueue.pop();
 		return topval;
 	}
 	virtual __inline__ void clear(){
-		boost::mutex::scoped_lock lock(concurrent_base<container_T, NMAXELEM>::mmutex);
-		while(!concurrent_base<container_T, NMAXELEM>::mqueue.empty()){
-			concurrent_base<container_T, NMAXELEM>::mqueue.pop();
+		boost::mutex::scoped_lock lock(concurrent_base<container_T>::mmutex);
+		while(!concurrent_base<container_T>::mqueue.empty()){
+			concurrent_base<container_T>::mqueue.pop();
 		}
 	}
 };
 
-template<class container_T, size_t NMAXELEM = 4294967295U>
-class concurrent_pqueue:public concurrent_base<container_T, NMAXELEM>
+template<class container_T>
+class concurrent_pqueue:public concurrent_base<container_T>
 {
 public:
-	concurrent_pqueue(){concurrent_base<container_T, NMAXELEM>::waited=0;};
+	concurrent_pqueue(){};
 	virtual ~concurrent_pqueue(){};
-	__inline__ typename concurrent_base<container_T, NMAXELEM>::value_type pop(void){
-		boost::mutex::scoped_lock lock(concurrent_base<container_T, NMAXELEM>::mmutex);
-		while(concurrent_base<container_T, NMAXELEM>::mqueue.empty())
+	__inline__ typename concurrent_base<container_T>::value_type pop(void){
+		boost::mutex::scoped_lock lock(concurrent_base<container_T>::mmutex);
+		while(concurrent_base<container_T>::mqueue.empty())
 		{
-			concurrent_base<container_T, NMAXELEM>::mcond.timed_wait(lock, boost::posix_time::microsec(10));
+			concurrent_base<container_T>::mcond.timed_wait(lock, boost::posix_time::microsec(10));
 		}
-		typename concurrent_base<container_T, NMAXELEM>::value_type topval = concurrent_base<container_T, NMAXELEM>::mqueue.top();
-		concurrent_base<container_T, NMAXELEM>::mqueue.pop();
+		typename concurrent_base<container_T>::value_type topval = concurrent_base<container_T>::mqueue.top();
+		concurrent_base<container_T>::mqueue.pop();
 		return topval;
 	}
 	virtual __inline__ void clear(){
-		boost::mutex::scoped_lock lock(concurrent_base<container_T, NMAXELEM>::mmutex);
-		while(!concurrent_base<container_T, NMAXELEM>::mqueue.empty()){
-			concurrent_base<container_T, NMAXELEM>::mqueue.pop();
+		boost::mutex::scoped_lock lock(concurrent_base<container_T>::mmutex);
+		while(!concurrent_base<container_T>::mqueue.empty()){
+			concurrent_base<container_T>::mqueue.pop();
 		}
 	}
 };
