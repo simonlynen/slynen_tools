@@ -35,14 +35,14 @@ rosbuild_add_library(graphvis src/graphvis.cc)
 #target_link_libraries(example ${PROJECT_NAME})
 
 
-rosbuild_add_executable(testconcurrent_queue src/test/test_concurrent_queue.cpp)
+
+
+#rosbuild_add_gtest(testsortcomp src/test/test_sort_comp.cc)
+#rosbuild_add_gtest(testLIFO src/test/testLIFO.cc)
+#rosbuild_link_boost(testLIFO thread)
+#rosbuild_add_gtest(MST src/test/MST.cc)
+#rosbuild_add_gtest(MST src/test/128_tools.cc)
+
+rosbuild_add_gtest(testconcurrent_queue src/test/test_concurrent_queue.cpp)
 rosbuild_link_boost(testconcurrent_queue thread)
-
-
-rosbuild_add_gtest(test/testsortcomp src/test/test_sort_comp.cc)
-rosbuild_add_gtest(test/testLIFO src/test/testLIFO.cc)
-rosbuild_add_gtest(test/MST src/test/MST.cc)
-rosbuild_add_gtest(test/MST src/test/128_tools.cc)
-rosbuild_add_gtest(test/testconcurrent_queue src/test/test_concurrent_queue.cpp)
-
 
