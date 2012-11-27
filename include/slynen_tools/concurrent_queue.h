@@ -40,10 +40,11 @@ public:
 
 	__inline__ void push(value_type const& data)
 	{
-		bool const was_empty=mqueue.empty();
 		using namespace std;
+		bool was_empty;
 		{ //to unlock before notification
 			boost::mutex::scoped_lock lock(mmutex);
+			was_empty=mqueue.empty();
 			mqueue.push(data);
 		}
 		if(was_empty)
